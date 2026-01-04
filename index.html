@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaTrust - Water Quality Truth Score Prototype</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:"Times New Roman", Times, serif;
+}
+
+body{
+  background:linear-gradient(135deg,#d2f1ff,#f0f9ff);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  font-size:16px;
+}
+
+.container{
+  background:#fff;
+  padding:30px;
+  border-radius:20px;
+  width:520px;
+  box-shadow:0 10px 25px rgba(0,0,0,.2);
+}
+
+h1{
+  text-align:center;
+  color:#0077b6;
+  font-size:32px;
+}
+
+p{
+  text-align:center;
+  margin:10px 0;
+  font-size:15px;
+}
+
+.demo-buttons{
+  display:flex;
+  gap:10px;
+  margin:15px 0;
+}
+
+.demo-buttons button{
+  flex:1;
+  padding:10px;
+  border:none;
+  border-radius:12px;
+  font-weight:bold;
+  font-size:15px;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.demo-buttons button:hover{
+  transform:translateY(-3px) scale(1.05);
+  box-shadow:0 6px 15px rgba(0,0,0,.25);
+}
+
+.green{background:#4caf50;color:#fff}
+.yellow{background:#ffca28}
+.red{background:#f44336;color:#fff}
+
+label{
+  font-weight:bold;
+  color:#023e8a;
+  font-size:15px;
+}
+
+input{
+  width:100%;
+  padding:10px;
+  margin-bottom:12px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  font-size:15px;
+}
+
+.main-btn{
+  width:100%;
+  padding:12px;
+  margin-bottom:10px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(45deg,#00b4d8,#0077b6);
+  color:#fff;
+  font-weight:bold;
+  font-size:16px;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.main-btn:hover{
+  transform:scale(1.05);
+}
+
+.result{
+  display:none;
+  margin-top:20px;
+  background:#e0f7fa;
+  padding:15px;
+  border-radius:15px;
+}
+
+.score{
+  font-size:30px;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+.indicators{
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.indicators button{
+  flex:1;
+  padding:8px;
+  border:none;
+  border-radius:10px;
+  color:#fff;
+  font-weight:bold;
+  font-size:14px;
+}
+
+canvas{
+  margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>AquaTrust 💧</h1>
+<p>Water Quality Truth Score Prototype.</p>
+
+<div class="demo-buttons">
+  <button class="green" onclick="fillGood()">🟢 Good</button>
+  <button class="yellow" onclick="fillAverage()">🟡 Average</button>
+  <button class="red" onclick="fillBad()">🔴 Bad</button>
+</div>
+
+<form id="waterForm">
+<label>pH</label>
+<input id="ph" type="number" step="0.1" required>
+
+<label>TDS</label>
+<input id="tds" type="number" required>
+
+<label>Hardness</label>
+<input id="hardness" type="number" required>
+
+<label>Nitrate</label>
+<input id="nitrate" type="number" required>
+
+<button class="main-btn">Calculate Truth Score</button>
+<button type="button" class="main-btn" onclick="toggleResult()">Show / Hide Result</button>
+</form>
+
+<div class="result" id="resultBox">
+<div class="score" id="scoreBox">0 / 100</div>
+
+<div class="indicators">
+  <button id="phInd">pH</button>
+  <button id="tdsInd">TDS</button>
+  <button id="hardInd">Hard</button>
+  <button id="nitInd">NO₃</button>
+</div>
+
+<canvas id="chart"></canvas>
+</div>
+
+</div>
+
+<script>
+let chart;
+
+function fillGood(){
+  ph.value=7.2; tds.value=200; hardness.value=150; nitrate.value=10;
+}
+function fillAverage(){
+  ph.value=6.4; tds.value=520; hardness.value=320; nitrate.value=40;
+}
+function fillBad(){
+  ph.value=5.0; tds.value=900; hardness.value=600; nitrate.value=90;
+}
+
+function toggleResult(){
+  resultBox.style.display =
+  resultBox.style.display==="none" ? "block":"none";
+}
+
+waterForm.addEventListener("submit",e=>{
+e.preventDefault();
+
+let score=0;
+function color(btn,c){btn.className=c}
+
+(ph.value>=6.5 && ph.value<=8.5) ? (color(phInd,"green"),score+=25) :
+(ph.value>=5.5 && ph.value<=9.5)?color(phInd,"yellow"):color(phInd,"red");
+
+(tds.value<=500)?(color(tdsInd,"green"),score+=15):
+(tds.value<=600)?color(tdsInd,"yellow"):color(tdsInd,"red");
+
+(hardness.value<=300)?(color(hardInd,"green"),score+=20):
+(hardness.value<=360)?color(hardInd,"yellow"):color(hardInd,"red");
+
+(nitrate.value<=45)?(color(nitInd,"green"),score+=40):
+(nitrate.value<=55)?color(nitInd,"yellow"):color(nitInd,"red");
+
+scoreBox.innerText="💧 "+score+" / 100";
+resultBox.style.display="block";
+
+const ctx=document.getElementById("chart").getContext("2d");
+if(chart) chart.destroy();
+
+chart=new Chart(ctx,{
+type:"bar",
+data:{
+labels:["pH","TDS","Hardness","Nitrate"],
+datasets:[
+{label:"Your Value",
+data:[ph.value,tds.value,hardness.value,nitrate.value],
+backgroundColor:"rgba(0,123,255,.7)"},
+{label:"Safe Limit",
+data:[8.5,500,300,45],
+backgroundColor:"rgba(0,200,83,.6)"}
+]
+},
+options:{responsive:true}
+});
+});
+</script>
+
+</body>
+</html>
